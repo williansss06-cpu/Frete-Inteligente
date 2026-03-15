@@ -1493,13 +1493,41 @@ window.onload = function() {
 salvarRota("São Paulo", "Rio de Janeiro", "SP")
 }
 <script>
-document.querySelector("#btnAdicionarBase").addEventListener("click", async () => {
+document.querySelector("#btnSaveRoute").addEventListener("click", async () => {
 
-  const origem = document.querySelector("#origem").value
-  const destino = document.querySelector("#destino").value
-  const uf_origem = origem.split("/")[1]
+  const origem = document.querySelector("#origin").value
+  const destino = document.querySelector("#destination").value
+  const uf_origem = document.querySelector("#originUF").value
 
   const { data, error } = await supabaseClient
+    .from("rota")
+    .insert([
+      {
+        origem: origem,
+        destino: destino,
+        uf_origem: uf_origem
+      }
+    ])
+
+  if (error) {
+    console.log("Erro:", error)
+    alert("Erro ao salvar rota")
+  } else {
+    console.log("Rota salva:", data)
+    alert("Rota salva na base!")
+  }
+
+})
+</script>
+  <script>
+
+document.querySelector("#btnAddBase").addEventListener("click", async () => {
+
+const origem = document.querySelector("#origin").value
+const destino = document.querySelector("#destination").value
+const uf_origem = document.querySelector("#originUF").value
+
+const { data, error } = await supabaseClient
 .from("rota")
 .insert([
 {
@@ -1509,13 +1537,16 @@ document.querySelector("#btnAdicionarBase").addEventListener("click", async () =
 }
 ])
 
-if(!error){
-  alert("Rota salva na base!")
-
-  carregarRotas()   // 🔥 ATUALIZA A TELA
+if(error){
+console.log("Erro:", error)
+alert("Erro ao salvar rota")
+}else{
+console.log("Rota salva:", data)
+alert("Rota salva na base!")
 }
 
 })
+
 </script>
 </body>
 </html>
