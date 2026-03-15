@@ -1264,9 +1264,7 @@ benchRanges: [
         state.partners = state.partners.map((p) => p.id === id ? { ...p, selected: !p.selected } : p);
         renderPartners();
       }
-      window.togglePartner = togglePartner;
-
-      function renderPartners() {
+          function renderPartners() {
         $('partnersBody').innerHTML = state.partners.map((p) => {
           const rate = p.invites ? p.responses / p.invites : 0;
           return `
@@ -1483,10 +1481,7 @@ window.onload = function() {
 salvarRota("São Paulo", "Rio de Janeiro", "SP")
 }
 <script>
-document.querySelector("#btnSaveRoute").addEventListener("click", async () => {
-
-  const origem = document.querySelector("#origin").value
-  const destino = document.querySelector("#destination").value
+const destino = document.querySelector("#destination").value
   const uf_origem = document.querySelector("#originUF").value
 
   const { data, error } = await supabaseClient
@@ -1541,13 +1536,9 @@ alert("Rota salva na base!")
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-
-const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
 const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
 
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
-
-async function salvarRota(){
 
 const origem = document.querySelector("#origin").value
 const destino = document.querySelector("#destination").value
@@ -1580,6 +1571,44 @@ document.querySelector("#btnAddBase").addEventListener("click", salvarRota)
 document.querySelector("#btnSaveRoute").addEventListener("click", salvarRota)
 
 </script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script>
+
+const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
+const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+
+async function salvarRota(){
+
+const origem = document.querySelector("#origin").value
+const destino = document.querySelector("#destination").value
+const uf_origem = document.querySelector("#originUF").value
+
+const { data, error } = await supabaseClient
+.from("rota")
+.insert([
+{
+origem: origem,
+destino: destino,
+uf_origem: uf_origem
+}
+])
+
+if(error){
+console.log("Erro:", error)
+alert("Erro ao salvar rota")
+}else{
+console.log("Rota salva:", data)
+alert("Rota salva na base!")
+}
+
+}
+
+document.querySelector("#btnAddBase").addEventListener("click", salvarRota)
+document.querySelector("#btnSaveRoute").addEventListener("click", salvarRota)
+
+</script>
 </body>
 </html>
