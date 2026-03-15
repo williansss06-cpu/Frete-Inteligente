@@ -941,108 +941,127 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
-   <!-- Substitua o bloco de inicialização do Firebase por este: -->
+    // CONFIGURAÇÃO DO FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6YNz6vagSyIJumrKeY1Ptr_6rTpMMZ_A",
+      authDomain: "rota-22c3b.firebaseapp.com",
+      databaseURL: "https://rota-22c3b-default-rtdb.firebaseio.com",
+      projectId: "rota-22c3b",
+      storageBucket: "rota-22c3b.firebasestorage.app",
+      messagingSenderId: "491665660350",
+      appId: "1:491665660350:web:fb79aa28f612d321c081ef",
+      measurementId: "G-8QBM2TCPY8"
+    };
 
-<script>
-  // CONFIGURAÇÃO DO FIREBASE (opcional)
-  const firebaseConfig = {
-    apiKey: "AIzaSyA6YNz6vagSyIJumrKeY1Ptr_6rTpMMZ_A",
-    authDomain: "rota-22c3b.firebaseapp.com",
-    databaseURL: "https://rota-22c3b-default-rtdb.firebaseio.com",
-    projectId: "rota-22c3b",
-    storageBucket: "rota-22c3b.firebasestorage.app",
-    messagingSenderId: "491665660350",
-    appId: "1:491665660350:web:fb79aa28f612d321c081ef",
-    measurementId: "G-8QBM2TCPY8"
-  };
-
-  let database = null;
-  let firebaseDisponivel = false;
-
-  // Tenta inicializar o Firebase
-  try {
+    // Inicializa Firebase
     firebase.initializeApp(firebaseConfig);
-    database = firebase.database();
-    firebaseDisponivel = true;
-    console.log("✅ Firebase inicializado com sucesso!");
-  } catch (error) {
-    console.warn("⚠️ Firebase não disponível, usando modo local:", error.message);
-    firebaseDisponivel = false;
-  }
+    const database = firebase.database();
 
-  // Versão modificada da função salvarRotaNoBanco que funciona mesmo sem Firebase
-  async function salvarRotaNoBanco(origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora) {
-    console.log("📤 Tentando salvar:", { origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora });
-    
-    if (!firebaseDisponivel || !database) {
-      console.log("📝 Modo LOCAL: dados salvos apenas na memória");
-      showToast('📝 Modo Local', 'Firebase não disponível. Dados salvos apenas localmente.', 'warning');
-      return { 
-        success: true, 
-        local: true,
-        data: { id: 'local_' + Date.now() } 
-      };
-    }
-    
-    try {
-      const novaRotaRef = database.ref('rotas').push();
+    // Toast notification
+    function showToast(title, message, type = 'success') {
+      const toast = document.getElementById('toast');
+      const toastTitle = document.getElementById('toastTitle');
+      const toastMessage = document.getElementById('toastMessage');
       
-      await novaRotaRef.set({
-        origem,
-        destino,
-        uf_origem,
-        uf_destino,
-        km: Number(km),
-        veiculo,
-        frete_cotado: Number(frete_cotado),
-        transportadora,
-        timestamp: Date.now()
+      toast.className = `toast ${type}`;
+      toastTitle.textContent = title;
+      toastMessage.textContent = message;
+      toast.style.display = 'block';
+      
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 5000);
+    }
+
+    // Função para salvar rota no Firebase
+    async function salvarRotaNoBanco(origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora) {
+      console.log("📤 Enviando dados para o Firebase:", {
+        origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora
       });
-
-      console.log("✅ SUCESSO! ID no Firebase:", novaRotaRef.key);
-      showToast('✅ Firebase', `Rota salva! ID: ${novaRotaRef.key.substring(0, 8)}...`, 'success');
       
-      return { success: true, data: { id: novaRotaRef.key } };
-      
-    } catch (error) {
-      console.error("❌ Erro no Firebase:", error);
-      showToast('❌ Erro no Firebase', error.message, 'error');
-      return { success: false, error: error.message };
-    }
-  }
-
-  // Função para verificar status do Firebase
-  function verificarStatusFirebase() {
-    const indicator = document.getElementById('firebaseIndicator');
-    const text = document.getElementById('firebaseText');
-    
-    if (!firebaseDisponivel || !database) {
-      indicator.className = 'firebase-indicator disconnected';
-      text.innerHTML = '🔴 Desconectado do Firebase (modo local)';
-      return;
-    }
-    
-    // Tenta verificar conexão
-    const connectedRef = database.ref('.info/connected');
-    connectedRef.on('value', (snap) => {
-      if (snap.val() === true) {
-        indicator.className = 'firebase-indicator connected';
-        text.innerHTML = '✅ Conectado ao Firebase';
+      try {
+        const novaRotaRef = database.ref('rotas').push();
         
-        // Tenta contar rotas
-        database.ref('rotas').once('value').then(s => {
-          const total = s.numChildren();
-          text.innerHTML = `✅ Conectado ao Firebase | ${total} rota(s) salva(s)`;
-        }).catch(() => {
-          text.innerHTML = '✅ Conectado ao Firebase';
+        await novaRotaRef.set({
+          origem,
+          destino,
+          uf_origem,
+          uf_destino,
+          km: Number(km),
+          veiculo,
+          frete_cotado: Number(frete_cotado),
+          transportadora,
+          timestamp: Date.now()
         });
-      } else {
-        indicator.className = 'firebase-indicator disconnected';
-        text.innerHTML = '🔴 Desconectado do Firebase (modo local)';
+
+        console.log("✅ SUCESSO! ID gerado no Firebase:", novaRotaRef.key);
+        console.log("🔗 Link para visualizar no console:");
+        console.log(`https://console.firebase.google.com/project/rota-22c3b/database/rota-22c3b-default-rtdb/data/rotas/${novaRotaRef.key}`);
+        
+        showToast('✅ Firebase', `Rota salva com sucesso! ID: ${novaRotaRef.key.substring(0, 8)}...`, 'success');
+        
+        return { success: true, data: { id: novaRotaRef.key } };
+        
+      } catch (error) {
+        console.error("❌ Erro no Firebase:", error);
+        showToast('❌ Erro no Firebase', error.message, 'error');
+        return { success: false, error: error.message };
       }
-    });
-  }
-</script>
+    }
+
+    // Função para carregar rotas do Firebase
+    async function carregarRotasDoBanco() {
+      try {
+        const snapshot = await database.ref('rotas').once('value');
+        const rotas = snapshot.val();
+        if (rotas) {
+          const rotasArray = Object.entries(rotas).map(([id, dados]) => ({
+            id,
+            corridor: `${dados.uf_origem} > ${dados.uf_destino}`,
+            origin: dados.origem,
+            destination: dados.destino,
+            originUF: dados.uf_origem,
+            destinationUF: dados.uf_destino,
+            km: dados.km,
+            vehicle: dados.veiculo,
+            freightQuoted: dados.frete_cotado,
+            carrier: dados.transportadora,
+            firebaseId: id
+          }));
+          console.log(`📊 ${rotasArray.length} rotas carregadas do Firebase`);
+          return rotasArray;
+        }
+        return [];
+      } catch (error) {
+        console.error("Erro ao carregar rotas:", error);
+        return [];
+      }
+    }
+
+    // Verificar conexão Firebase
+    function verificarConexaoFirebase() {
+      const indicator = document.getElementById('firebaseIndicator');
+      const text = document.getElementById('firebaseText');
+      
+      database.ref('.info/connected').on('value', async (snap) => {
+        if (snap.val() === true) {
+          indicator.className = 'firebase-indicator connected';
+          
+          // Contar rotas
+          try {
+            const snapshot = await database.ref('rotas').once('value');
+            const total = snapshot.numChildren();
+            text.innerHTML = `✅ Conectado ao Firebase | ${total} rota(s) salva(s)`;
+          } catch (error) {
+            text.innerHTML = '✅ Conectado ao Firebase (erro ao contar rotas)';
+          }
+        } else {
+          indicator.className = 'firebase-indicator disconnected';
+          text.innerHTML = '❌ Desconectado do Firebase (modo local)';
+        }
+      });
+    }
+
     // Verificar Firebase manualmente
     function verificarFirebase() {
       database.ref('rotas').once('value', (snapshot) => {
