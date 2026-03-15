@@ -357,7 +357,7 @@
       <div>
         <div class="tag">🚚 Frete Inteligente 2.0</div>
         <h1>Plataforma de precificação de frete dedicado</h1>
-              </div>
+      </div>
       <div class="actions">
         <button class="btn secondary" id="btnInfo">Como usar</button>
         <button class="btn" id="btnAddBase">Adicionar simulação à base</button>
@@ -403,7 +403,7 @@
             <p>Informe a rota e os dados da operação</p>
           </div>
           <div class="panel-body">
-              <div class="form-grid">
+            <div class="form-grid">
               <div class="full">
                 <label for="origin">Origem</label>
                 <input id="origin" value="Guarulhos/SP" />
@@ -766,66 +766,97 @@
     </section>
   </div>
 
+  <!-- Carrega Supabase primeiro -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
+    // Configuração do Supabase (global)
+    const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
+    const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+
+    // Função para salvar no Supabase
+    async function salvarRotaNoBanco(origem, destino, uf_origem) {
+      try {
+        const { data, error } = await supabaseClient
+          .from("rota") // Verifique se o nome da tabela está correto no Supabase
+          .insert([
+            {
+              origem: origem,
+              destino: destino,
+              uf_origem: uf_origem
+            }
+          ])
+
+        if (error) {
+          console.error("Erro Supabase:", error)
+          return { success: false, error: error.message }
+        } else {
+          console.log("Rota salva no Supabase:", data)
+          return { success: true, data }
+        }
+      } catch (err) {
+        console.error("Erro inesperado:", err)
+        return { success: false, error: "Erro de conexão" }
+      }
+    }
+
+    // IIFE principal do sistema (integrada com Supabase)
     (() => {
       const state = {
+        vehicleProfiles: {
+          'utilitario': { label: 'Utilitário / Fiorino', internalCostPerKm: 1.8, defaultToll: 0 },
+          'vuc': { label: 'VUC', internalCostPerKm: 2.4, defaultToll: 50 },
+          'truck': { label: 'Truck 3 eixos', internalCostPerKm: 4.15, defaultToll: 180 },
+          'toco': { label: 'Toco / 4 eixos', internalCostPerKm: 4.60, defaultToll: 220 },
+          'carreta5': { label: 'Carreta 5 eixos', internalCostPerKm: 5.25, defaultToll: 320 },
+          'carreta6': { label: 'Carreta 6 eixos', internalCostPerKm: 5.85, defaultToll: 390 },
+          'bitrem': { label: 'Bitrem 9 eixos', internalCostPerKm: 7.35, defaultToll: 580 }
+        },
 
-vehicleProfiles: {
+        vehicleAlias: {
+          'Utilitário / Fiorino': 'utilitario',
+          'VUC': 'vuc',
+          'Truck 3 eixos': 'truck',
+          'Toco / 4 eixos': 'toco',
+          'Carreta 5 eixos': 'carreta5',
+          'Carreta 6 eixos': 'carreta6',
+          'Bitrem 9 eixos': 'bitrem'
+        },
 
-'utilitario': { label: 'Utilitário / Fiorino', internalCostPerKm: 1.8, defaultToll: 0 },
-'vuc': { label: 'VUC', internalCostPerKm: 2.4, defaultToll: 50 },
-'truck': { label: 'Truck 3 eixos', internalCostPerKm: 4.15, defaultToll: 180 },
-'toco': { label: 'Toco / 4 eixos', internalCostPerKm: 4.60, defaultToll: 220 },
-'carreta5': { label: 'Carreta 5 eixos', internalCostPerKm: 5.25, defaultToll: 320 },
-'carreta6': { label: 'Carreta 6 eixos', internalCostPerKm: 5.85, defaultToll: 390 },
-'bitrem': { label: 'Bitrem 9 eixos', internalCostPerKm: 7.35, defaultToll: 580 }
+        params: {
+          anttRates: { 
+            '3_eixos': 4.70,
+            '4_eixos': 5.00,
+            '5_eixos': 5.45,
+            '6_eixos': 5.95,
+            '9_eixos': 7.55
+          },
+          loadUnloadFee: 320,
+          waitingHourCost: 90,
+          urgencyPct: 0.12,
+          emptyReturnPct: 0.18,
+          exclusivityPct: 0.10,
+          operationalRiskPct: 0.05,
+          marginPct: 0.12,
+          adminCost: 150
+        },
 
-},
-
-vehicleAlias: {
-'Utilitário / Fiorino': 'utilitario',
-'VUC': 'vuc',
-'Truck 3 eixos': 'truck',
-'Toco / 4 eixos': 'toco',
-'Carreta 5 eixos': 'carreta5',
-'Carreta 6 eixos': 'carreta6',
-'Bitrem 9 eixos': 'bitrem'
-},
-
-params: {
-  anttRates: { 
-    '3_eixos': 4.70,
-    '4_eixos': 5.00,
-    '5_eixos': 5.45,
-    '6_eixos': 5.95,
-    '9_eixos': 7.55
-  },
-
-  loadUnloadFee: 320,
-  waitingHourCost: 90,
-
-  urgencyPct: 0.12,
-  emptyReturnPct: 0.18,
-  exclusivityPct: 0.10,
-
-  operationalRiskPct: 0.05,
-  marginPct: 0.12,
-  adminCost: 150
-},
-
-benchRanges: [
+        benchRanges: [
           { id: 1, minKm: 0, maxKm: 100, minRate: 6.2, medianRate: 7.4, maxRate: 9.2 },
           { id: 2, minKm: 101, maxKm: 300, minRate: 5.7, medianRate: 6.8, maxRate: 8.1 },
           { id: 3, minKm: 301, maxKm: 600, minRate: 5.2, medianRate: 6.2, maxRate: 7.6 },
           { id: 4, minKm: 601, maxKm: 1000, minRate: 4.9, medianRate: 5.8, maxRate: 7.1 },
           { id: 5, minKm: 1001, maxKm: 999999, minRate: 4.6, medianRate: 5.5, maxRate: 6.8 }
         ],
+        
         routes: [
           { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: '5_eixos', freightQuoted: 6100, carrier: 'Transportadora Alpha' },
           { id: 2, corridor: 'SP > MG', origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: '5_eixos', freightQuoted: 7800, carrier: 'Transportadora Beta' },
           { id: 3, corridor: 'SP > PR', origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: '6_eixos', freightQuoted: 5200, carrier: 'Transportadora Gama' },
           { id: 4, corridor: 'SP > BA', origin: 'Guarulhos/SP', destination: 'Feira de Santana/BA', originUF: 'SP', destinationUF: 'BA', km: 1830, vehicle: '9_eixos', freightQuoted: 22000, carrier: 'Transportadora Delta' }
         ],
+        
         costTable: [],
         dailyRoutes: [],
         partners: [],
@@ -1128,9 +1159,12 @@ benchRanges: [
         $('lowPartnerBox').innerHTML = `<strong>${low.name}</strong><br><span class="muted">Respostas: ${low.responses} · Convites: ${low.invites} · Taxa: ${formatPct(low.rate)}</span>`;
       }
 
-      function addCurrentRoute() {
+      // FUNÇÃO PRINCIPAL MODIFICADA: Salva no state e no Supabase
+      async function addCurrentRoute() {
         const d = currentSimData();
-        state.routes.push({
+        
+        // 1. Salva no state local
+        const newRoute = {
           id: Date.now(),
           corridor: `${normUF(d.originUF)} > ${normUF(d.destinationUF)}`,
           origin: d.origin,
@@ -1141,10 +1175,21 @@ benchRanges: [
           vehicle: normVehicle(d.vehicle),
           freightQuoted: Number(d.quoted),
           carrier: d.carrier || 'Nova transportadora'
-        });
+        };
+        
+        state.routes.push(newRoute);
+        
+        // 2. Tenta salvar no Supabase
+        const result = await salvarRotaNoBanco(d.origin, d.destination, normUF(d.originUF));
+        
+        if (result.success) {
+          alert('Simulação adicionada à base local e salva no banco de dados!');
+        } else {
+          alert(`Simulação adicionada à base local, mas falha ao salvar no banco: ${result.error}`);
+        }
+        
         renderRoutes();
         renderMetricsAndDashboard();
-        alert('Simulação adicionada à base.');
       }
 
       function showInfo() {
@@ -1264,7 +1309,8 @@ benchRanges: [
         state.partners = state.partners.map((p) => p.id === id ? { ...p, selected: !p.selected } : p);
         renderPartners();
       }
-          function renderPartners() {
+
+      function renderPartners() {
         $('partnersBody').innerHTML = state.partners.map((p) => {
           const rate = p.invites ? p.responses / p.invites : 0;
           return `
@@ -1444,148 +1490,6 @@ benchRanges: [
         init();
       }
     })();
-  
-<script>
-async function salvarRota(origem, destino, uf_origem) {
-
-  const { data, error } = await supabaseClient
-    .from("Rota")
-    .insert([
-      {
-        origem: origem,
-        destino: destino,
-        uf_origem: uf_origem
-      }
-    ])
-
-  if(error){
-    console.log("Erro:", error)
-  } else {
-    console.log("Rota salva:", data)
-    alert("Rota salva na base!")
-  }
-
-}
-
-if(error){
-console.log("Erro:", error)
-}else{
-console.log("Rota salva:", data)
-}
-
-}
-</script>
-
-<script>
-window.onload = function() {
-salvarRota("São Paulo", "Rio de Janeiro", "SP")
-}
-<script>
-const destino = document.querySelector("#destination").value
-  const uf_origem = document.querySelector("#originUF").value
-
-  const { data, error } = await supabaseClient
-    .from("rota")
-    .insert([
-      {
-        origem: origem,
-        destino: destino,
-        uf_origem: uf_origem
-      }
-    ])
-
-  if (error) {
-    console.log("Erro:", error)
-    alert("Erro ao salvar rota")
-  } else {
-    console.log("Rota salva:", data)
-    alert("Rota salva na base!")
-  }
-
-})
-</script>
-  <script>
-
-document.querySelector("#btnAddBase").addEventListener("click", async () => {
-
-const origem = document.querySelector("#origin").value
-const destino = document.querySelector("#destination").value
-const uf_origem = document.querySelector("#originUF").value
-
-const { data, error } = await supabaseClient
-.from("rota")
-.insert([
-{
-  origem: origem,
-  destino: destino,
-  uf_origem: uf_origem
-}
-])
-
-if(error){
-console.log("Erro:", error)
-alert("Erro ao salvar rota")
-}else{
-console.log("Rota salva:", data)
-alert("Rota salva na base!")
-}
-
-})
-
-</script>
-
-<!-- Carregue o Supabase primeiro -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-  // Inicialização do Supabase
-  const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
-  const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
-  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
-
-  // Função única para salvar rota
-  async function salvarRota() {
-    const origem = document.querySelector("#origin")?.value
-    const destino = document.querySelector("#destination")?.value
-    const uf_origem = document.querySelector("#originUF")?.value
-
-    if (!origem || !destino || !uf_origem) {
-      alert("Preencha todos os campos obrigatórios")
-      return
-    }
-
-    try {
-      const { data, error } = await supabaseClient
-        .from("rota")
-        .insert([
-          {
-            origem: origem,
-            destino: destino,
-            uf_origem: uf_origem
-          }
-        ])
-
-      if (error) {
-        console.error("Erro Supabase:", error)
-        alert("Erro ao salvar rota: " + error.message)
-      } else {
-        console.log("Rota salva:", data)
-        alert("Rota salva na base!")
-      }
-    } catch (err) {
-      console.error("Erro inesperado:", err)
-      alert("Erro ao conectar com o banco de dados")
-    }
-  }
-
-  // Aguarda o DOM carregar antes de adicionar os listeners
-  document.addEventListener('DOMContentLoaded', function() {
-    const btnAddBase = document.querySelector("#btnAddBase")
-    const btnSaveRoute = document.querySelector("#btnSaveRoute")
-    
-    if (btnAddBase) btnAddBase.addEventListener("click", salvarRota)
-    if (btnSaveRoute) btnSaveRoute.addEventListener("click", salvarRota)
-  })
-</script>
+  </script>
 </body>
 </html>
