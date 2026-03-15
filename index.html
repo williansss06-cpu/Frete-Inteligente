@@ -766,42 +766,62 @@
     </section>
   </div>
 
-  <!-- Carrega Supabase primeiro -->
-  <script>
-    <!-- Carrega Supabase primeiro -->
-  <script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Carrega Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script>
-    // Configuração do Supabase (GLOBAL)
-    const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
-    const supabaseKey = "COLE_AQUI_SUA_CHAVE_ANON_PUBLIC" // 🔴 COLE A CHAVE QUE COMEÇA COM "eyJ"
-    
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+<script>
+// CONFIGURAÇÃO DO SUPABASE
+const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"  // 🔴 URL correta
+const supabaseKey = "sb_publishable_CG8-CfLr7Wk0qYMJYkWdW_GmYQ3..."  // 🔴 Sua chave
 
-    // Função global para salvar no Supabase
-    async function salvarRotaNoBanco(origem, destino) {
-      try {
-        console.log("Tentando salvar no Supabase:", { origem, destino })
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+
+// Função para salvar no Supabase
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+// CONFIGURAÇÃO DO SUPABASE
+const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"  // URL correta (verifique)
+const supabaseKey = "sb_publishable_CG8-CfLr7WkQqYMJYkWdW_GmYQ3"  // Sua chave completa (sem ...)
+
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+
+// Função para salvar no Supabase
+<script>
+async function salvarRotaNoBanco(origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora) {
+    try {
+        console.log("Salvando:", { origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora })
         
+        // CORREÇÃO: Insert com objeto, não array simples
         const { data, error } = await supabaseClient
-          .from("rota")
-          .insert([{ origem, destino }])
+            .from("rota")
+            .insert([{ 
+                origem, 
+                destino, 
+                uf_origem, 
+                uf_destino, 
+                km, 
+                veiculo, 
+                frete_cotado, 
+                transportadora 
+            }])
 
         if (error) {
-          console.error("Erro Supabase:", error)
-          return { success: false, error: error.message }
-        } else {
-          console.log("Rota salva no Supabase:", data)
-          return { success: true, data }
+            console.error("Erro:", error)
+            return { success: false, error: error.message }
         }
-      } catch (err) {
+        
+        console.log("Sucesso:", data)
+        return { success: true, data }
+        
+    } catch (err) {
         console.error("Erro inesperado:", err)
         return { success: false, error: err.message }
-      }
     }
-
-    // IIFE principal do sistema (MODIFICADA para usar Supabase)
+}
+</script>
+    
+    // IIFE principal do sistema
     (() => {
       const state = {
         vehicleProfiles: {
@@ -1159,7 +1179,7 @@
         $('lowPartnerBox').innerHTML = `<strong>${low.name}</strong><br><span class="muted">Respostas: ${low.responses} · Convites: ${low.invites} · Taxa: ${formatPct(low.rate)}</span>`;
       }
 
-      // FUNÇÃO PRINCIPAL MODIFICADA: Salva no state e no Supabase
+      // FUNÇÃO PRINCIPAL - Salva no state e no Supabase
       async function addCurrentRoute() {
         const d = currentSimData();
         
@@ -1179,17 +1199,13 @@
         
         state.routes.push(newRoute);
         
-        // 2. Tenta salvar no Supabase (agora usando a função global)
-        if (typeof salvarRotaNoBanco !== 'undefined') {
-          const result = await salvarRotaNoBanco(d.origin, d.destination);
-          
-          if (result.success) {
-            alert('Simulação adicionada à base local e salva no banco de dados!');
-          } else {
-            alert(`Simulação adicionada à base local, mas falha ao salvar no banco: ${result.error}`);
-          }
+        // 2. Tenta salvar no Supabase
+        const result = await salvarRotaNoBanco(d.origin, d.destination);
+        
+        if (result.success) {
+          alert('✅ Simulação adicionada à base local e salva no banco de dados!');
         } else {
-          alert('Simulação adicionada à base local (Supabase não configurado)');
+          alert(`⚠️ Simulação adicionada à base local, mas falha no banco: ${result.error}`);
         }
         
         renderRoutes();
