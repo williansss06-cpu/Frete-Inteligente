@@ -1500,21 +1500,20 @@ document.querySelector("#btnAdicionarBase").addEventListener("click", async () =
   const uf_origem = origem.split("/")[1]
 
   const { data, error } = await supabaseClient
-    .from("Rota")
-    .insert([
-      {
-        origem: origem,
-        destino: destino,
-        uf_origem: uf_origem
-      }
-    ])
+.from("rota")
+.insert([
+{
+  origem: origem,
+  destino: destino,
+  uf_origem: uf_origem
+}
+])
 
-  if(error){
-    console.log("Erro:", error)
-  } else {
-    console.log("Rota salva:", data)
-    alert("Rota salva na base!")
-  }
+if(!error){
+  alert("Rota salva na base!")
+
+  carregarRotas()   // 🔥 ATUALIZA A TELA
+}
 
 })
 </script>
