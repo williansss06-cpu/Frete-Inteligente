@@ -1460,15 +1460,24 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
 <script>
 async function salvarRota(origem, destino, uf_origem) {
 
-const { data, error } = await supabaseClient
-.from("rota")
-.insert([
-{
-origem: origem,
-destino: destino,
-uf_origem: uf_origem
+  const { data, error } = await supabaseClient
+    .from("Rota")
+    .insert([
+      {
+        origem: origem,
+        destino: destino,
+        uf_origem: uf_origem
+      }
+    ])
+
+  if(error){
+    console.log("Erro:", error)
+  } else {
+    console.log("Rota salva:", data)
+    alert("Rota salva na base!")
+  }
+
 }
-])
 
 if(error){
 console.log("Erro:", error)
