@@ -766,8 +766,8 @@
     </section>
   </div>
    <!-- Carrega Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
     // CONFIGURAÇÃO DO FIREBASE
@@ -783,9 +783,7 @@
     };
 
     // Inicializa Firebase
-    firebase.initializeApp(firebaseConfig);
-    const database = firebase.database();
-
+    import { initializeApp } from "firebase/app";
     // Função para salvar no Firebase (CORRIGIDA!)
     async function salvarRotaNoBanco(origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora) {
       try {
@@ -814,8 +812,35 @@
       }
     }
 
-    // IIFE principal do sistema (SEU CÓDIGO EXISTENTE AQUI!)
-    (() => {
+    // Função para carregar rotas do Firebase
+    async function carregarRotasDoBanco() {
+      try {
+        const snapshot = await database.ref('rotas').once('value');
+        const rotas = snapshot.val();
+        if (rotas) {
+          const rotasArray = Object.entries(rotas).map(([id, dados]) => ({
+            id,
+            corridor: `${dados.uf_origem} > ${dados.uf_destino}`,
+            origin: dados.origem,
+            destination: dados.destino,
+            originUF: dados.uf_origem,
+            destinationUF: dados.uf_destino,
+            km: dados.km,
+            vehicle: dados.veiculo,
+            freightQuoted: dados.frete_cotado,
+            carrier: dados.transportadora
+          }));
+          return rotasArray;
+        }
+        return [];
+      } catch (error) {
+        console.error("Erro ao carregar rotas:", error);
+        return [];
+      }
+    }
+
+    // IIFE principal do sistema
+    (async () => {
       const state = {
         vehicleProfiles: {
           'utilitario': { label: 'Utilitário / Fiorino', internalCostPerKm: 1.8, defaultToll: 0 },
@@ -839,11 +864,13 @@
 
         params: {
           anttRates: { 
-            '3_eixos': 4.70,
-            '4_eixos': 5.00,
-            '5_eixos': 5.45,
-            '6_eixos': 5.95,
-            '9_eixos': 7.55
+            'utilitario': 2.85,
+            'vuc': 3.40,
+            'truck': 4.70,
+            'toco': 5.00,
+            'carreta5': 5.45,
+            'carreta6': 5.95,
+            'bitrem': 7.55
           },
           loadUnloadFee: 320,
           waitingHourCost: 90,
@@ -863,12 +890,7 @@
           { id: 5, minKm: 1001, maxKm: 999999, minRate: 4.6, medianRate: 5.5, maxRate: 6.8 }
         ],
         
-        routes: [
-          { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: '5_eixos', freightQuoted: 6100, carrier: 'Transportadora Alpha' },
-          { id: 2, corridor: 'SP > MG', origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: '5_eixos', freightQuoted: 7800, carrier: 'Transportadora Beta' },
-          { id: 3, corridor: 'SP > PR', origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: '6_eixos', freightQuoted: 5200, carrier: 'Transportadora Gama' },
-          { id: 4, corridor: 'SP > BA', origin: 'Guarulhos/SP', destination: 'Feira de Santana/BA', originUF: 'SP', destinationUF: 'BA', km: 1830, vehicle: '9_eixos', freightQuoted: 22000, carrier: 'Transportadora Delta' }
-        ],
+        routes: [],
         
         costTable: [],
         dailyRoutes: [],
@@ -916,7 +938,7 @@
         const km = Number(data.km || 0);
         const quoted = Number(data.quoted || 0);
         const vehicle = normVehicle(data.vehicle);
-        const profile = state.vehicleProfiles[vehicle] || state.vehicleProfiles['5_eixos'];
+        const profile = state.vehicleProfiles[vehicle] || state.vehicleProfiles['carreta5'];
         const anttRate = Number(state.params.anttRates[vehicle] || 0);
         const bench = getBench(km);
         const tableCostRow = getUFVehicleCost(data.originUF, vehicle);
@@ -984,7 +1006,7 @@
         $('vehicle').innerHTML = Object.entries(state.vehicleProfiles)
           .map(([key, value]) => `<option value="${key}">${value.label}</option>`)
           .join('');
-        $('vehicle').value = '5_eixos';
+        $('vehicle').value = 'carreta5';
       }
 
       function renderParamInputs() {
@@ -1004,7 +1026,7 @@
       function renderBenchTable() {
         $('benchTableBody').innerHTML = state.benchRanges.map((r) => `
           <tr>
-            <td>${r.minKm} - ${r.maxKm}</td>
+            <td>${r.minKm} - ${r.maxKm === 999999 ? '∞' : r.maxKm}</td>
             <td><input id="bench_min_${r.id}" type="number" step="0.01" value="${r.minRate}" /></td>
             <td><input id="bench_med_${r.id}" type="number" step="0.01" value="${r.medianRate}" /></td>
             <td><input id="bench_max_${r.id}" type="number" step="0.01" value="${r.maxRate}" /></td>
@@ -1214,6 +1236,25 @@
         renderMetricsAndDashboard();
       }
 
+      // Carregar rotas do Firebase ao iniciar
+      async function carregarRotasIniciais() {
+        const rotasFirebase = await carregarRotasDoBanco();
+        
+        // Rotas padrão caso não haja dados no Firebase
+        if (rotasFirebase.length === 0) {
+          state.routes = [
+            { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: 'carreta5', freightQuoted: 6100, carrier: 'Transportadora Alpha' },
+            { id: 2, corridor: 'SP > MG', origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: 'carreta5', freightQuoted: 7800, carrier: 'Transportadora Beta' },
+            { id: 3, corridor: 'SP > PR', origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: 'carreta6', freightQuoted: 5200, carrier: 'Transportadora Gama' },
+            { id: 4, corridor: 'SP > BA', origin: 'Guarulhos/SP', destination: 'Feira de Santana/BA', originUF: 'SP', destinationUF: 'BA', km: 1830, vehicle: 'bitrem', freightQuoted: 22000, carrier: 'Transportadora Delta' }
+          ];
+        } else {
+          state.routes = rotasFirebase;
+        }
+        renderRoutes();
+        renderMetricsAndDashboard();
+      }
+
       function showInfo() {
         alert('Fluxo sugerido: 1) ajuste os parâmetros, 2) precifique no simulador, 3) importe tabela de custo e rotas do dia, 4) selecione as transportadoras, 5) dispare a cotação, 6) analise os retornos no comparativo.');
       }
@@ -1274,12 +1315,12 @@
 
       function loadSampleCostTable() {
         state.costTable = [
-          { uf: 'SP', vehicle: '5_eixos', valueKm: 5.35 },
-          { uf: 'SP', vehicle: '6_eixos', valueKm: 5.95 },
-          { uf: 'SP', vehicle: '9_eixos', valueKm: 7.40 },
-          { uf: 'MG', vehicle: '5_eixos', valueKm: 5.20 },
-          { uf: 'RJ', vehicle: '5_eixos', valueKm: 5.55 },
-          { uf: 'PR', vehicle: '6_eixos', valueKm: 5.80 }
+          { uf: 'SP', vehicle: 'carreta5', valueKm: 5.35 },
+          { uf: 'SP', vehicle: 'carreta6', valueKm: 5.95 },
+          { uf: 'SP', vehicle: 'bitrem', valueKm: 7.40 },
+          { uf: 'MG', vehicle: 'carreta5', valueKm: 5.20 },
+          { uf: 'RJ', vehicle: 'carreta5', valueKm: 5.55 },
+          { uf: 'PR', vehicle: 'carreta6', valueKm: 5.80 }
         ];
         renderCostTable();
         renderAll();
@@ -1288,9 +1329,9 @@
 
       function loadSampleDailyRoutes() {
         state.dailyRoutes = [
-          { id: 101, origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: '6_eixos' },
-          { id: 102, origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: '5_eixos' },
-          { id: 103, origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: '5_eixos' }
+          { id: 101, origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: 'carreta6' },
+          { id: 102, origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: 'carreta5' },
+          { id: 103, origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: 'carreta5' }
         ];
         renderDailyRoutes();
         renderReturns();
@@ -1337,7 +1378,7 @@
           const rate = p.invites ? p.responses / p.invites : 0;
           return `
             <tr>
-              <td><input type="checkbox" ${p.selected ? 'checked' : ''} onchange="togglePartner(${p.id})" /></td>
+              <td><input type="checkbox" ${p.selected ? 'checked' : ''} onchange="window.togglePartner(${p.id})" /></td>
               <td>${p.name}</td>
               <td>${p.email}</td>
               <td>${p.invites}</td>
@@ -1484,6 +1525,9 @@
         $('btnPreviewMail').addEventListener('click', previewMail);
         $('btnSendQuotes').addEventListener('click', sendQuotes);
         $('btnSampleReturns').addEventListener('click', loadSampleReturns);
+        
+        // Tornar togglePartner global
+        window.togglePartner = togglePartner;
       }
 
       function renderAll() {
@@ -1496,13 +1540,14 @@
         renderReturns();
       }
 
-      function init() {
+      async function init() {
         renderVehicleOptions();
         renderParamInputs();
         renderBenchTable();
         bindTabs();
         bindEvents();
         renderPartners();
+        await carregarRotasIniciais(); // Carrega dados do Firebase primeiro
         renderAll();
       }
 
