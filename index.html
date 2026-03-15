@@ -1534,45 +1534,58 @@ alert("Rota salva na base!")
 
 </script>
 
+<!-- Carregue o Supabase primeiro -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
+  // Inicialização do Supabase
+  const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
+  const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
 
-const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
-const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
+  // Função única para salvar rota
+  async function salvarRota() {
+    const origem = document.querySelector("#origin")?.value
+    const destino = document.querySelector("#destination")?.value
+    const uf_origem = document.querySelector("#originUF")?.value
 
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+    if (!origem || !destino || !uf_origem) {
+      alert("Preencha todos os campos obrigatórios")
+      return
+    }
 
-async function salvarRota(){
+    try {
+      const { data, error } = await supabaseClient
+        .from("rota")
+        .insert([
+          {
+            origem: origem,
+            destino: destino,
+            uf_origem: uf_origem
+          }
+        ])
 
-const origem = document.querySelector("#origin").value
-const destino = document.querySelector("#destination").value
-const uf_origem = document.querySelector("#originUF").value
+      if (error) {
+        console.error("Erro Supabase:", error)
+        alert("Erro ao salvar rota: " + error.message)
+      } else {
+        console.log("Rota salva:", data)
+        alert("Rota salva na base!")
+      }
+    } catch (err) {
+      console.error("Erro inesperado:", err)
+      alert("Erro ao conectar com o banco de dados")
+    }
+  }
 
-const { data, error } = await supabaseClient
-.from("rota")
-.insert([
-{
-origem: origem,
-destino: destino,
-uf_origem: uf_origem
-}
-])
-
-if(error){
-console.log("Erro:", error)
-alert("Erro ao salvar rota")
-}else{
-console.log("Rota salva:", data)
-alert("Rota salva na base!")
-}
-
-}
-
-document.querySelector("#btnAddBase").addEventListener("click", salvarRota)
-document.querySelector("#btnSaveRoute").addEventListener("click", salvarRota)
-
+  // Aguarda o DOM carregar antes de adicionar os listeners
+  document.addEventListener('DOMContentLoaded', function() {
+    const btnAddBase = document.querySelector("#btnAddBase")
+    const btnSaveRoute = document.querySelector("#btnSaveRoute")
+    
+    if (btnAddBase) btnAddBase.addEventListener("click", salvarRota)
+    if (btnSaveRoute) btnSaveRoute.addEventListener("click", salvarRota)
+  })
 </script>
-
 </body>
 </html>
