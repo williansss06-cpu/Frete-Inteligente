@@ -1533,45 +1533,7 @@ alert("Rota salva na base!")
 })
 
 </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
-
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
-
-const origem = document.querySelector("#origin").value
-const destino = document.querySelector("#destination").value
-const uf_origem = document.querySelector("#originUF").value
-
-const { data, error } = await supabaseClient
-.from("rota")
-.insert([
-{
-origem: origem,
-destino: destino,
-uf_origem: uf_origem
-}
-])
-
-if(error){
-console.log("Erro:", error)
-alert("Erro ao salvar rota")
-}else{
-console.log("Rota salva:", data)
-alert("Rota salva na base!")
-}
-
-}
-
-// BOTÃO DO TOPO
-document.querySelector("#btnAddBase").addEventListener("click", salvarRota)
-
-// BOTÃO DENTRO DO SIMULADOR
-document.querySelector("#btnSaveRoute").addEventListener("click", salvarRota)
-
-</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 
