@@ -1483,29 +1483,29 @@ console.log("Rota salva:", data)
 window.onload = function() {
 salvarRota("São Paulo", "Rio de Janeiro", "SP")
 }
-</script>
-  document.querySelector("#btnAdicionarBase").addEventListener("click", async () => {
+<script>
+document.querySelector("#btnAdicionarBase").addEventListener("click", async () => {
 
-const origem = document.querySelector("#origem").value
-const destino = document.querySelector("#destino").value
-const uf_origem = origem.split("/")[1]
+  const origem = document.querySelector("#origem").value
+  const destino = document.querySelector("#destino").value
+  const uf_origem = origem.split("/")[1]
 
-const { data, error } = await supabaseClient
-.from("Rota")
-.insert([
-{
-origem: origem,
-destino: destino,
-uf_origem: uf_origem
-}
-])
+  const { data, error } = await supabaseClient
+    .from("Rota")
+    .insert([
+      {
+        origem: origem,
+        destino: destino,
+        uf_origem: uf_origem
+      }
+    ])
 
-if(error){
-console.log("Erro:", error)
-}else{
-console.log("Rota salva:", data)
-alert("Rota salva na base!")
-}
+  if(error){
+    console.log("Erro:", error)
+  } else {
+    console.log("Rota salva:", data)
+    alert("Rota salva na base!")
+  }
 
 })
 </script>
