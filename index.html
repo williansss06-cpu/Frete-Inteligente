@@ -783,13 +783,30 @@
     };
 
     // Inicializa Firebase
-    import { initializeApp } from "firebase/app";
-    // Função para salvar no Firebase (CORRIGIDA!)
-    async function salvarRotaNoBanco(origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora) {
-      try {
-        console.log("Salvando no Firebase:", { origem, destino, uf_origem, uf_destino, km, veiculo, frete_cotado, transportadora });
-        
-        const novaRotaRef = database.ref('rotas').push();
+   async function carregarRotasIniciais() {
+  try {
+    const rotasFirebase = await carregarRotasDoBanco();
+
+    if (rotasFirebase.length === 0) {
+      state.routes = [
+        { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: 'carreta5', freightQuoted: 6100, carrier: 'Transportadora Alpha' },
+        { id: 2, corridor: 'SP > MG', origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: 'carreta5', freightQuoted: 7800, carrier: 'Transportadora Beta' },
+        { id: 3, corridor: 'SP > PR', origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: 'carreta6', freightQuoted: 5200, carrier: 'Transportadora Gama' }
+      ];
+    } else {
+      state.routes = rotasFirebase;
+    }
+
+  } catch (error) {
+    console.log("Firebase indisponível. Usando rotas locais.");
+    state.routes = [
+      { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: 'carreta5', freightQuoted: 6100, carrier: 'Transportadora Alpha' }
+    ];
+  }
+
+  renderRoutes();
+  renderMetricsAndDashboard();
+}
         
         await novaRotaRef.set({
           origem,
