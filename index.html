@@ -767,430 +767,78 @@
   </div>
 
   <!-- Carrega Supabase primeiro -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script>
-    // Configuração do Supabase (global)
-    const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
-    const supabaseKey = "sb_publishable_wOUtKsTrZGibGg5_VRT7Bg_UOfSFo0"
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Configuração do Supabase
+  const supabaseUrl = "https://gdlgceoliupjinkgunxe.supabase.co"
+  const supabaseKey = "COLE_AQUI_SUA_CHAVE_ANON_PUBLIC" // 🔴 COLE A CHAVE QUE COMEÇA COM "eyJ"
+  
+  const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
 
-    // Função para salvar no Supabase
-    async function salvarRotaNoBanco(origem, destino, uf_origem) {
-      try {
-        const { data, error } = await supabaseClient
-          .from("rota") // Verifique se o nome da tabela está correto no Supabase
-          .insert([
-            {
-              origem: origem,
-              destino: destino,
-              uf_origem: uf_origem
-            }
-          ])
+  async function salvarRotaNoBanco(origem, destino, uf_origem) {
+    try {
+      console.log("Tentando salvar no Supabase:", { origem, destino, uf_origem })
+      
+      // NOTA: A tabela NÃO tem campo uf_origem! 
+      // Removemos uf_origem porque não existe na tabela
+      const { data, error } = await supabaseClient
+        .from("rota")
+        .insert([
+          {
+            origem: origem,
+            destino: destino
+            // uf_origem: uf_origem  // ⚠️ Comentado porque não existe na tabela
+          }
+        ])
 
-        if (error) {
-          console.error("Erro Supabase:", error)
-          return { success: false, error: error.message }
-        } else {
-          console.log("Rota salva no Supabase:", data)
-          return { success: true, data }
-        }
-      } catch (err) {
-        console.error("Erro inesperado:", err)
-        return { success: false, error: "Erro de conexão" }
+      if (error) {
+        console.error("Erro Supabase:", error)
+        return { success: false, error: error.message }
+      } else {
+        console.log("Rota salva no Supabase:", data)
+        return { success: true, data }
       }
+    } catch (err) {
+      console.error("Erro inesperado:", err)
+      return { success: false, error: err.message }
     }
+  }
 
-    // IIFE principal do sistema (integrada com Supabase)
-    (() => {
-      const state = {
-        vehicleProfiles: {
-          'utilitario': { label: 'Utilitário / Fiorino', internalCostPerKm: 1.8, defaultToll: 0 },
-          'vuc': { label: 'VUC', internalCostPerKm: 2.4, defaultToll: 50 },
-          'truck': { label: 'Truck 3 eixos', internalCostPerKm: 4.15, defaultToll: 180 },
-          'toco': { label: 'Toco / 4 eixos', internalCostPerKm: 4.60, defaultToll: 220 },
-          'carreta5': { label: 'Carreta 5 eixos', internalCostPerKm: 5.25, defaultToll: 320 },
-          'carreta6': { label: 'Carreta 6 eixos', internalCostPerKm: 5.85, defaultToll: 390 },
-          'bitrem': { label: 'Bitrem 9 eixos', internalCostPerKm: 7.35, defaultToll: 580 }
-        },
-
-        vehicleAlias: {
-          'Utilitário / Fiorino': 'utilitario',
-          'VUC': 'vuc',
-          'Truck 3 eixos': 'truck',
-          'Toco / 4 eixos': 'toco',
-          'Carreta 5 eixos': 'carreta5',
-          'Carreta 6 eixos': 'carreta6',
-          'Bitrem 9 eixos': 'bitrem'
-        },
-
-        params: {
-          anttRates: { 
-            '3_eixos': 4.70,
-            '4_eixos': 5.00,
-            '5_eixos': 5.45,
-            '6_eixos': 5.95,
-            '9_eixos': 7.55
-          },
-          loadUnloadFee: 320,
-          waitingHourCost: 90,
-          urgencyPct: 0.12,
-          emptyReturnPct: 0.18,
-          exclusivityPct: 0.10,
-          operationalRiskPct: 0.05,
-          marginPct: 0.12,
-          adminCost: 150
-        },
-
-        benchRanges: [
-          { id: 1, minKm: 0, maxKm: 100, minRate: 6.2, medianRate: 7.4, maxRate: 9.2 },
-          { id: 2, minKm: 101, maxKm: 300, minRate: 5.7, medianRate: 6.8, maxRate: 8.1 },
-          { id: 3, minKm: 301, maxKm: 600, minRate: 5.2, medianRate: 6.2, maxRate: 7.6 },
-          { id: 4, minKm: 601, maxKm: 1000, minRate: 4.9, medianRate: 5.8, maxRate: 7.1 },
-          { id: 5, minKm: 1001, maxKm: 999999, minRate: 4.6, medianRate: 5.5, maxRate: 6.8 }
-        ],
-        
-        routes: [
-          { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: '5_eixos', freightQuoted: 6100, carrier: 'Transportadora Alpha' },
-          { id: 2, corridor: 'SP > MG', origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: '5_eixos', freightQuoted: 7800, carrier: 'Transportadora Beta' },
-          { id: 3, corridor: 'SP > PR', origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: '6_eixos', freightQuoted: 5200, carrier: 'Transportadora Gama' },
-          { id: 4, corridor: 'SP > BA', origin: 'Guarulhos/SP', destination: 'Feira de Santana/BA', originUF: 'SP', destinationUF: 'BA', km: 1830, vehicle: '9_eixos', freightQuoted: 22000, carrier: 'Transportadora Delta' }
-        ],
-        
-        costTable: [],
-        dailyRoutes: [],
-        partners: [],
-        mailLog: [],
-        quotationReturns: [],
-        simFlags: { urgency: false, emptyReturn: false, exclusivity: false }
-      };
-
-      const $ = (id) => document.getElementById(id);
-      const formatCurrency = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-      const formatNumber = (v) => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-      const formatPct = (v) => `${(Number(v || 0) * 100).toFixed(1).replace('.', ',')}%`;
-      const normUF = (v) => String(v || '').trim().toUpperCase();
-      const normVehicle = (v) => state.vehicleAlias[String(v || '').trim()] || String(v || '').trim();
-      const vehicleLabel = (key) => state.vehicleProfiles[key]?.label || key;
-
-      function getBench(km) {
-        return state.benchRanges.find((r) => km >= r.minKm && km <= r.maxKm) || state.benchRanges[state.benchRanges.length - 1];
-      }
-
-      function getUFVehicleCost(uf, vehicle) {
-        return state.costTable.find((r) => normUF(r.uf) === normUF(uf) && normVehicle(r.vehicle) === normVehicle(vehicle)) || null;
-      }
-
-      function currentSimData() {
-        return {
-          origin: $('origin').value,
-          destination: $('destination').value,
-          originUF: $('originUF').value,
-          destinationUF: $('destinationUF').value,
-          km: Number($('km').value || 0),
-          vehicle: $('vehicle').value,
-          quoted: Number($('quoted').value || 0),
-          toll: Number($('toll').value || 0),
-          waitingHours: Number($('waitingHours').value || 0),
-          carrier: $('carrier').value,
-          urgency: state.simFlags.urgency,
-          emptyReturn: state.simFlags.emptyReturn,
-          exclusivity: state.simFlags.exclusivity
-        };
-      }
-
-      function calculate(data) {
-        const km = Number(data.km || 0);
-        const quoted = Number(data.quoted || 0);
-        const vehicle = normVehicle(data.vehicle);
-        const profile = state.vehicleProfiles[vehicle] || state.vehicleProfiles['5_eixos'];
-        const anttRate = Number(state.params.anttRates[vehicle] || 0);
-        const bench = getBench(km);
-        const tableCostRow = getUFVehicleCost(data.originUF, vehicle);
-        const basePerKm = tableCostRow ? Number(tableCostRow.valueKm) : Number(profile.internalCostPerKm);
-        const internalBase = km * basePerKm;
-        const anttTrip = km * anttRate + Number(state.params.loadUnloadFee || 0);
-        const waitingCost = Number(data.waitingHours || 0) * Number(state.params.waitingHourCost || 0);
-        const urgencyCost = data.urgency ? internalBase * Number(state.params.urgencyPct || 0) : 0;
-        const emptyReturnCost = data.emptyReturn ? internalBase * Number(state.params.emptyReturnPct || 0) : 0;
-        const exclusivityCost = data.exclusivity ? internalBase * Number(state.params.exclusivityPct || 0) : 0;
-        const operationalRisk = internalBase * Number(state.params.operationalRiskPct || 0);
-        const adminCost = Number(state.params.adminCost || 0);
-        const toll = Number(data.toll || 0);
-        const internalCost = internalBase + waitingCost + urgencyCost + emptyReturnCost + exclusivityCost + operationalRisk + adminCost + toll;
-        const targetPrice = Math.max(anttTrip, internalCost * (1 + Number(state.params.marginPct || 0)));
-        const idealMin = Math.max(anttTrip, km * bench.minRate);
-        const idealMedian = km * bench.medianRate;
-        const idealMax = km * bench.maxRate;
-        const quotedPerKm = km ? quoted / km : 0;
-        const targetPerKm = km ? targetPrice / km : 0;
-
-        let status = 'Conforme';
-        let tone = 'ok';
-        if (quoted > 0 && quoted < anttTrip) { status = 'Abaixo ANTT'; tone = 'danger'; }
-        else if (quoted > idealMax) { status = 'Acima mercado'; tone = 'warn'; }
-        else if (quoted > targetPrice) { status = 'Acima alvo'; tone = 'info'; }
-        else if (quoted > idealMedian * 1.15) { status = 'Negociar'; tone = 'warn'; }
-
-        return {
-          profile,
-          anttRate,
-          anttTrip,
-          bench,
-          internalBase,
-          internalCost,
-          ufTableValue: tableCostRow ? km * Number(tableCostRow.valueKm) : null,
-          ufTableRate: tableCostRow ? Number(tableCostRow.valueKm) : null,
-          waitingCost,
-          urgencyCost,
-          emptyReturnCost,
-          exclusivityCost,
-          operationalRisk,
-          adminCost,
-          toll,
-          targetPrice,
-          idealMin,
-          idealMedian,
-          idealMax,
-          quotedPerKm,
-          targetPerKm,
-          savingPotential: quoted > targetPrice ? quoted - targetPrice : 0,
-          deviationVsMarket: idealMedian ? quoted / idealMedian - 1 : 0,
-          deviationVsAntt: anttTrip ? quoted / anttTrip - 1 : 0,
-          status,
-          tone
-        };
-      }
-
-      function setBadge(el, text, tone) {
-        el.className = `pill ${tone}`;
-        el.textContent = text;
-      }
-
-      function renderVehicleOptions() {
-        $('vehicle').innerHTML = Object.entries(state.vehicleProfiles)
-          .map(([key, value]) => `<option value="${key}">${value.label}</option>`)
-          .join('');
-        $('vehicle').value = '5_eixos';
-      }
-
-      function renderParamInputs() {
-        $('param_loadUnloadFee').value = state.params.loadUnloadFee;
-        $('param_waitingHourCost').value = state.params.waitingHourCost;
-        $('param_urgencyPct').value = state.params.urgencyPct;
-        $('param_emptyReturnPct').value = state.params.emptyReturnPct;
-        $('param_exclusivityPct').value = state.params.exclusivityPct;
-        $('param_operationalRiskPct').value = state.params.operationalRiskPct;
-        $('param_marginPct').value = state.params.marginPct;
-        $('param_adminCost').value = state.params.adminCost;
-        $('anttRatesGrid').innerHTML = Object.entries(state.vehicleProfiles)
-          .map(([key, value]) => `<div><label>${value.label}</label><input id="antt_${key}" type="number" step="0.01" value="${state.params.anttRates[key]}" /></div>`)
-          .join('');
-      }
-
-      function renderBenchTable() {
-        $('benchTableBody').innerHTML = state.benchRanges.map((r) => `
-          <tr>
-            <td>${r.minKm} - ${r.maxKm}</td>
-            <td><input id="bench_min_${r.id}" type="number" step="0.01" value="${r.minRate}" /></td>
-            <td><input id="bench_med_${r.id}" type="number" step="0.01" value="${r.medianRate}" /></td>
-            <td><input id="bench_max_${r.id}" type="number" step="0.01" value="${r.maxRate}" /></td>
-          </tr>
-        `).join('');
-      }
-
-      function saveParams() {
-        state.params.loadUnloadFee = Number($('param_loadUnloadFee').value || 0);
-        state.params.waitingHourCost = Number($('param_waitingHourCost').value || 0);
-        state.params.urgencyPct = Number($('param_urgencyPct').value || 0);
-        state.params.emptyReturnPct = Number($('param_emptyReturnPct').value || 0);
-        state.params.exclusivityPct = Number($('param_exclusivityPct').value || 0);
-        state.params.operationalRiskPct = Number($('param_operationalRiskPct').value || 0);
-        state.params.marginPct = Number($('param_marginPct').value || 0);
-        state.params.adminCost = Number($('param_adminCost').value || 0);
-        Object.keys(state.vehicleProfiles).forEach((key) => {
-          state.params.anttRates[key] = Number($(`antt_${key}`).value || 0);
-        });
-        renderAll();
-        alert('Parâmetros aplicados com sucesso.');
-      }
-
-      function saveBench() {
-        state.benchRanges = state.benchRanges.map((r) => ({
-          ...r,
-          minRate: Number($(`bench_min_${r.id}`).value || 0),
-          medianRate: Number($(`bench_med_${r.id}`).value || 0),
-          maxRate: Number($(`bench_max_${r.id}`).value || 0)
-        }));
-        renderAll();
-        alert('Benchmark aplicado com sucesso.');
-      }
-
-      function renderSimulation() {
-        const data = currentSimData();
-        const result = calculate(data);
-        $('resultRoute').textContent = `${data.origin} → ${data.destination}`;
-        setBadge($('statusBadge'), result.status, result.tone);
-        $('anttTrip').textContent = formatCurrency(result.anttTrip);
-        $('anttRate').textContent = `${formatCurrency(result.anttRate)}/km simplificado`;
-        $('idealMedian').textContent = formatCurrency(result.idealMedian);
-        $('benchRate').textContent = `${formatCurrency(result.bench.medianRate)}/km`;
-        $('internalCost').textContent = formatCurrency(result.internalCost);
-        $('targetPerKm').textContent = `${formatCurrency(result.targetPerKm)}/km alvo`;
-        $('targetPrice').textContent = formatCurrency(result.targetPrice);
-        $('savingPotential').textContent = `Saving potencial ${formatCurrency(result.savingPotential)}`;
-        $('rangeSuggested').textContent = `${formatCurrency(result.idealMin)} a ${formatCurrency(result.idealMax)}`;
-        $('quotedDisplay').textContent = formatCurrency(data.quoted);
-        $('deviationMarket').textContent = formatPct(result.deviationVsMarket);
-        $('deviationAntt').textContent = formatPct(result.deviationVsAntt);
-        $('quotedPerKm').textContent = formatCurrency(result.quotedPerKm);
-        const width = Math.max(0, Math.min(100, ((data.quoted - result.idealMin) / Math.max(1, result.idealMax - result.idealMin)) * 100));
-        $('rangeBar').style.width = `${width}%`;
-        $('memoryBase').textContent = formatCurrency(result.internalBase);
-        $('memoryUF').textContent = result.ufTableRate !== null ? `${formatCurrency(result.ufTableValue)} (${formatCurrency(result.ufTableRate)}/km)` : 'Não cadastrado';
-        $('memoryToll').textContent = formatCurrency(result.toll);
-        $('memoryWaiting').textContent = formatCurrency(result.waitingCost);
-        $('memoryUrgency').textContent = formatCurrency(result.urgencyCost);
-        $('memoryEmpty').textContent = formatCurrency(result.emptyReturnCost);
-        $('memoryExclusive').textContent = formatCurrency(result.exclusivityCost);
-        $('memoryRisk').textContent = formatCurrency(result.operationalRisk);
-        $('memoryAdmin').textContent = formatCurrency(result.adminCost);
-        $('memoryTarget').textContent = formatCurrency(result.targetPrice);
-      }
-
-      function routeResults() {
-        return state.routes.map((route) => {
-          const calc = calculate({
-            originUF: route.originUF,
-            destinationUF: route.destinationUF,
-            km: route.km,
-            vehicle: route.vehicle,
-            quoted: route.freightQuoted,
-            toll: state.vehicleProfiles[route.vehicle]?.defaultToll || 0,
-            waitingHours: 2,
-            urgency: false,
-            emptyReturn: false,
-            exclusivity: false
-          });
-          return { ...route, ...calc };
-        });
-      }
-
-      function renderRoutes() {
-        const search = ($('routeSearch').value || '').toLowerCase();
-        const rows = routeResults().filter((r) => {
-          if (!search) return true;
-          return [r.corridor, r.origin, r.destination, r.carrier].some((v) => String(v).toLowerCase().includes(search));
-        });
-        $('routesTableBody').innerHTML = rows.map((r) => `
-          <tr>
-            <td><strong>${r.corridor}</strong><br><span class="muted">${r.origin} → ${r.destination}</span></td>
-            <td>${r.carrier}</td>
-            <td>${formatNumber(r.km)}</td>
-            <td>${formatCurrency(r.freightQuoted)}</td>
-            <td>${formatCurrency(r.anttTrip)}</td>
-            <td>${formatCurrency(r.idealMedian)}</td>
-            <td>${formatCurrency(r.internalCost)}</td>
-            <td>${formatCurrency(r.targetPrice)}</td>
-            <td><span class="pill ${r.tone}">${r.status}</span></td>
-          </tr>
-        `).join('');
-      }
-
-      function renderMetricsAndDashboard() {
-        const rows = routeResults();
-        const totalSavings = rows.reduce((acc, r) => acc + r.savingPotential, 0);
-        const aboveAntt = rows.filter((r) => r.freightQuoted >= r.anttTrip).length;
-        const aboveMarket = rows.filter((r) => r.freightQuoted > r.idealMax).length;
-        const conformity = rows.length ? (aboveAntt / rows.length) * 100 : 0;
-        const avgRate = rows.length ? rows.reduce((acc, r) => acc + r.quotedPerKm, 0) / rows.length : 0;
-        $('metricConformidade').textContent = `${formatNumber(conformity)}%`;
-        $('metricSaving').textContent = formatCurrency(totalSavings);
-        $('metricMercado').textContent = String(aboveMarket);
-        $('metricMedia').textContent = `${formatCurrency(avgRate)}/km`;
-
-        const maxValue = Math.max(...rows.map((r) => Math.max(r.freightQuoted, r.targetPrice)), 1);
-        $('carrierChart').innerHTML = rows.map((r) => {
-          const cotadoPct = (r.freightQuoted / maxValue) * 100;
-          const alvoPct = (r.targetPrice / maxValue) * 100;
-          return `
-            <div class="list-item">
-              <strong>${r.carrier}</strong>
-              <div class="muted">Cotado ${formatCurrency(r.freightQuoted)} · Alvo ${formatCurrency(r.targetPrice)}</div>
-              <div class="track"><div class="fill-main" style="width:${cotadoPct}%"></div></div>
-              <div class="track" style="margin-top:6px;"><div class="fill-soft" style="width:${alvoPct}%"></div></div>
-            </div>
-          `;
-        }).join('');
-
-        const maxDeviation = Math.max(...rows.map((r) => Math.abs(r.deviationVsMarket * 100)), 1);
-        $('corridorChart').innerHTML = rows.map((r) => {
-          const val = Math.abs(r.deviationVsMarket * 100) / maxDeviation * 100;
-          return `
-            <div class="list-item">
-              <strong>${r.corridor}</strong>
-              <div class="muted">Desvio ${(r.deviationVsMarket * 100).toFixed(1).replace('.', ',')}%</div>
-              <div class="track"><div class="fill-warn" style="width:${val}%"></div></div>
-            </div>
-          `;
-        }).join('');
-
-        $('priorityList').innerHTML = rows.slice().sort((a, b) => b.savingPotential - a.savingPotential).map((r) => `
-          <div class="list-item">
-            <strong>${r.corridor} · ${r.carrier}</strong>
-            <div class="muted">Cotado ${formatCurrency(r.freightQuoted)} · alvo ${formatCurrency(r.targetPrice)}</div>
-            <div style="margin-top:8px;font-weight:700;">Saving potencial ${formatCurrency(r.savingPotential)}</div>
-          </div>
-        `).join('');
-
-        renderPartnerRanking();
-      }
-
-      function renderPartnerRanking() {
-        if (!state.partners.length) {
-          $('topPartnerBox').textContent = 'Nenhuma transportadora cadastrada.';
-          $('lowPartnerBox').textContent = 'Nenhuma transportadora cadastrada.';
-          return;
-        }
-        const score = state.partners.map((p) => ({ ...p, rate: p.invites ? p.responses / p.invites : 0 }));
-        const top = score.slice().sort((a, b) => b.responses - a.responses || b.rate - a.rate)[0];
-        const low = score.slice().sort((a, b) => a.rate - b.rate || a.responses - b.responses)[0];
-        $('topPartnerBox').innerHTML = `<strong>${top.name}</strong><br><span class="muted">Respostas: ${top.responses} · Convites: ${top.invites} · Taxa: ${formatPct(top.rate)}</span>`;
-        $('lowPartnerBox').innerHTML = `<strong>${low.name}</strong><br><span class="muted">Respostas: ${low.responses} · Convites: ${low.invites} · Taxa: ${formatPct(low.rate)}</span>`;
-      }
-
-      // FUNÇÃO PRINCIPAL MODIFICADA: Salva no state e no Supabase
-      async function addCurrentRoute() {
-        const d = currentSimData();
-        
-        // 1. Salva no state local
-        const newRoute = {
-          id: Date.now(),
-          corridor: `${normUF(d.originUF)} > ${normUF(d.destinationUF)}`,
-          origin: d.origin,
-          destination: d.destination,
-          originUF: normUF(d.originUF),
-          destinationUF: normUF(d.destinationUF),
-          km: Number(d.km),
-          vehicle: normVehicle(d.vehicle),
-          freightQuoted: Number(d.quoted),
-          carrier: d.carrier || 'Nova transportadora'
-        };
-        
-        state.routes.push(newRoute);
-        
-        // 2. Tenta salvar no Supabase
-        const result = await salvarRotaNoBanco(d.origin, d.destination, normUF(d.originUF));
-        
-        if (result.success) {
-          alert('Simulação adicionada à base local e salva no banco de dados!');
-        } else {
-          alert(`Simulação adicionada à base local, mas falha ao salvar no banco: ${result.error}`);
-        }
-        
-        renderRoutes();
-        renderMetricsAndDashboard();
-      }
+  // Modifique a função addCurrentRoute dentro da IIFE para:
+  // (encontre esta função no código e substitua)
+  /*
+  async function addCurrentRoute() {
+    const d = currentSimData();
+    
+    // Salva no state local
+    state.routes.push({
+      id: Date.now(),
+      corridor: `${normUF(d.originUF)} > ${normUF(d.destinationUF)}`,
+      origin: d.origin,
+      destination: d.destination,
+      originUF: normUF(d.originUF),
+      destinationUF: normUF(d.destinationUF),
+      km: Number(d.km),
+      vehicle: normVehicle(d.vehicle),
+      freightQuoted: Number(d.quoted),
+      carrier: d.carrier || 'Nova transportadora'
+    });
+    
+    // Tenta salvar no Supabase (sem uf_origem)
+    const result = await salvarRotaNoBanco(d.origin, d.destination, normUF(d.originUF));
+    
+    if (result.success) {
+      alert('Simulação adicionada à base local e salva no banco de dados!');
+    } else {
+      alert(`Simulação adicionada à base local, mas falha ao salvar no banco: ${result.error}`);
+    }
+    
+    renderRoutes();
+    renderMetricsAndDashboard();
+  }
+  */
+</script>
 
       function showInfo() {
         alert('Fluxo sugerido: 1) ajuste os parâmetros, 2) precifique no simulador, 3) importe tabela de custo e rotas do dia, 4) selecione as transportadoras, 5) dispare a cotação, 6) analise os retornos no comparativo.');
