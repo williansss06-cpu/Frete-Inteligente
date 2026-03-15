@@ -1491,7 +1491,7 @@ const destino = document.querySelector("#destino").value
 const uf_origem = origem.split("/")[1]
 
 const { data, error } = await supabaseClient
-.from("rotas")
+.from("Rota")
 .insert([
 {
 origem: origem,
