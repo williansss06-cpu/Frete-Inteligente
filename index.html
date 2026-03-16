@@ -95,6 +95,18 @@
       color: #1d4ed8;
       border: 1px solid #bfdbfe;
     }
+    .btn-danger {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
     .metrics {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -285,7 +297,7 @@
       padding: 12px;
       border-bottom: 1px solid #e2e8f0;
       text-align: left;
-      vertical-align: top;
+      vertical-align: middle;
       font-size: 14px;
     }
     th {
@@ -337,6 +349,57 @@
       display: none;
       margin: 0 20px 20px;
     }
+
+    /* Botão de limpar dashboard */
+    .btn-limpar-dashboard {
+      background: #f3f4f6;
+      color: #4b5563;
+      border: 1px solid #d1d5db;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      margin-right: 20px;
+    }
+
+    .btn-limpar-dashboard:hover {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px 20px;
+    }
+
+    /* Botão de excluir */
+    .btn-excluir {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-excluir:hover {
+      background: #fecaca;
+      color: #991b1b;
+    }
+    
     @media (max-width: 1120px) {
       .metrics, .result-top, .charts, .stats-2 { grid-template-columns: 1fr 1fr; }
       .grid-2-3, .split { grid-template-columns: 1fr; }
@@ -541,6 +604,7 @@
                 <th>Custo interno</th>
                 <th>Preço-alvo</th>
                 <th>Status</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody id="routesTableBody"></tbody>
@@ -704,6 +768,14 @@
     </section>
 
     <section class="panel" id="panel-dashboard">
+      <!-- CABEÇALHO DO DASHBOARD COM BOTÃO DE LIMPAR -->
+      <div class="dashboard-header">
+        <h2 style="margin:0;">📊 Dashboard de Análise</h2>
+        <button class="btn-limpar-dashboard" onclick="limparDadosDashboard()">
+          <span>🧹</span> Limpar Dados dos Gráficos
+        </button>
+      </div>
+
       <div class="charts">
         <div class="card panel-body">
           <div class="panel-head" style="padding:0 0 10px;"><h3>Cotado x preço-alvo por transportadora</h3><p>Base cadastrada</p></div>
@@ -820,7 +892,7 @@
         const rotas = snapshot.val();
         if (rotas) {
           const rotasArray = Object.entries(rotas).map(([id, dados]) => ({
-            id,
+            id: id, // Usar o ID do Firebase como ID
             corridor: `${dados.uf_origem} > ${dados.uf_destino}`,
             origin: dados.origem,
             destination: dados.destino,
@@ -829,7 +901,8 @@
             km: dados.km,
             vehicle: dados.veiculo,
             freightQuoted: dados.frete_cotado,
-            carrier: dados.transportadora
+            carrier: dados.transportadora,
+            firebaseId: id
           }));
           return rotasArray;
         }
@@ -839,6 +912,81 @@
         return [];
       }
     }
+
+    // Variável global para armazenar o state (para acesso de funções externas)
+    let appState = null;
+
+    // ===== FUNÇÃO PARA LIMPAR DADOS DO DASHBOARD =====
+    function limparDadosDashboard() {
+      if (confirm('🧹 Deseja limpar os dados dos gráficos? As rotas serão mantidas, apenas os gráficos serão resetados.')) {
+        
+        // Acessar os elementos dos gráficos
+        const carrierChart = document.getElementById('carrierChart');
+        const corridorChart = document.getElementById('corridorChart');
+        const priorityList = document.getElementById('priorityList');
+        const topPartnerBox = document.getElementById('topPartnerBox');
+        const lowPartnerBox = document.getElementById('lowPartnerBox');
+        
+        if (carrierChart) {
+          carrierChart.innerHTML = '<div class="list-item" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado para exibir</div>';
+        }
+        
+        if (corridorChart) {
+          corridorChart.innerHTML = '<div class="list-item" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhum dado para exibir</div>';
+        }
+        
+        if (priorityList) {
+          priorityList.innerHTML = '<div class="list-item" style="text-align: center; color: #94a3b8; padding: 20px;">Nenhuma prioridade encontrada</div>';
+        }
+        
+        if (topPartnerBox) {
+          topPartnerBox.innerHTML = 'Nenhuma transportadora cadastrada.';
+        }
+        
+        if (lowPartnerBox) {
+          lowPartnerBox.innerHTML = 'Nenhuma transportadora cadastrada.';
+        }
+        
+        // Mostrar mensagem de sucesso
+        alert('✅ Gráficos limpos com sucesso!');
+        
+        console.log('📊 Dashboard limpo em:', new Date().toLocaleString());
+      }
+    }
+
+    // ===== FUNÇÃO PARA EXCLUIR ROTA =====
+    async function excluirRota(id, firebaseId) {
+      if (confirm('🗑️ Tem certeza que deseja excluir esta rota?')) {
+        
+        // Se tiver appState, usar ele
+        if (appState) {
+          // Filtrar a rota removendo a com o ID selecionado
+          appState.routes = appState.routes.filter(r => r.id != id);
+          
+          // Se tiver Firebase ID, tentar excluir do Firebase também
+          if (firebaseId && firebaseId !== 'undefined' && firebaseId !== '') {
+            try {
+              await database.ref('rotas/' + firebaseId).remove();
+              console.log('✅ Rota excluída do Firebase:', firebaseId);
+            } catch (error) {
+              console.error('❌ Erro ao excluir do Firebase:', error);
+            }
+          }
+          
+          // Re-renderizar a tabela e métricas usando as funções disponíveis
+          if (typeof renderRoutes === 'function') renderRoutes();
+          if (typeof renderMetricsAndDashboard === 'function') renderMetricsAndDashboard();
+          
+          alert('✅ Rota excluída com sucesso!');
+        } else {
+          alert('❌ Erro: Sistema não inicializado');
+        }
+      }
+    }
+
+    // Tornar as funções globais
+    window.limparDadosDashboard = limparDadosDashboard;
+    window.excluirRota = excluirRota;
 
     // IIFE principal do sistema
     (async () => {
@@ -900,6 +1048,9 @@
         quotationReturns: [],
         simFlags: { urgency: false, emptyReturn: false, exclusivity: false }
       };
+
+      // Atribuir à variável global
+      appState = state;
 
       const $ = (id) => document.getElementById(id);
       const formatCurrency = (v) => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -1118,7 +1269,18 @@
           if (!search) return true;
           return [r.corridor, r.origin, r.destination, r.carrier].some((v) => String(v).toLowerCase().includes(search));
         });
-        $('routesTableBody').innerHTML = rows.map((r) => `
+        
+        if (rows.length === 0) {
+          $('routesTableBody').innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 40px; color: #94a3b8;">Nenhuma rota encontrada</td></tr>';
+          return;
+        }
+        
+        $('routesTableBody').innerHTML = rows.map((r) => {
+          // Garantir que o ID seja passado corretamente
+          const routeId = r.id || r.firebaseId || '';
+          const firebaseId = r.firebaseId || '';
+          
+          return `
           <tr>
             <td><strong>${r.corridor}</strong><br><span class="muted">${r.origin} → ${r.destination}</span></td>
             <td>${r.carrier}</td>
@@ -1129,8 +1291,13 @@
             <td>${formatCurrency(r.internalCost)}</td>
             <td>${formatCurrency(r.targetPrice)}</td>
             <td><span class="pill ${r.tone}">${r.status}</span></td>
+            <td>
+              <button class="btn-excluir" onclick="excluirRota('${routeId}', '${firebaseId}')">
+                🗑️ Excluir
+              </button>
+            </td>
           </tr>
-        `).join('');
+        `}).join('');
       }
 
       function renderMetricsAndDashboard() {
@@ -1199,23 +1366,7 @@
       async function addCurrentRoute() {
         const d = currentSimData();
         
-        // 1. Salva no state local
-        const newRoute = {
-          id: Date.now(),
-          corridor: `${normUF(d.originUF)} > ${normUF(d.destinationUF)}`,
-          origin: d.origin,
-          destination: d.destination,
-          originUF: normUF(d.originUF),
-          destinationUF: normUF(d.destinationUF),
-          km: Number(d.km),
-          vehicle: normVehicle(d.vehicle),
-          freightQuoted: Number(d.quoted),
-          carrier: d.carrier || 'Nova transportadora'
-        };
-        
-        state.routes.push(newRoute);
-        
-        // 2. Tenta salvar no Firebase
+        // 1. Tenta salvar no Firebase
         const result = await salvarRotaNoBanco(
           d.origin, 
           d.destination, 
@@ -1228,9 +1379,25 @@
         );
         
         if (result.success) {
-          alert('✅ Simulação adicionada à base local e salva no Firebase!');
+          // Salva no state local com o ID do Firebase
+          const newRoute = {
+            id: result.data.id,
+            corridor: `${normUF(d.originUF)} > ${normUF(d.destinationUF)}`,
+            origin: d.origin,
+            destination: d.destination,
+            originUF: normUF(d.originUF),
+            destinationUF: normUF(d.destinationUF),
+            km: Number(d.km),
+            vehicle: normVehicle(d.vehicle),
+            freightQuoted: Number(d.quoted),
+            carrier: d.carrier || 'Nova transportadora',
+            firebaseId: result.data.id
+          };
+          
+          state.routes.push(newRoute);
+          alert('✅ Simulação adicionada à base e salva no Firebase!');
         } else {
-          alert(`⚠️ Simulação adicionada à base local, mas falha no Firebase: ${result.error}`);
+          alert(`❌ Falha ao salvar no Firebase: ${result.error}`);
         }
         
         renderRoutes();
@@ -1243,11 +1410,60 @@
           const rotasFirebase = await carregarRotasDoBanco();
           
           if (rotasFirebase.length === 0) {
+            // Se não tiver dados no Firebase, usar dados iniciais
             state.routes = [
-              { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: 'carreta5', freightQuoted: 6100, carrier: 'Transportadora Alpha' },
-              { id: 2, corridor: 'SP > MG', origin: 'Guarulhos/SP', destination: 'Contagem/MG', originUF: 'SP', destinationUF: 'MG', km: 590, vehicle: 'carreta5', freightQuoted: 7800, carrier: 'Transportadora Beta' },
-              { id: 3, corridor: 'SP > PR', origin: 'Guarulhos/SP', destination: 'Curitiba/PR', originUF: 'SP', destinationUF: 'PR', km: 405, vehicle: 'carreta6', freightQuoted: 5200, carrier: 'Transportadora Gama' },
-              { id: 4, corridor: 'SP > BA', origin: 'Guarulhos/SP', destination: 'Feira de Santana/BA', originUF: 'SP', destinationUF: 'BA', km: 1830, vehicle: 'bitrem', freightQuoted: 22000, carrier: 'Transportadora Delta' }
+              { 
+                id: '1', 
+                corridor: 'SP > RJ', 
+                origin: 'Guarulhos/SP', 
+                destination: 'Duque de Caxias/RJ', 
+                originUF: 'SP', 
+                destinationUF: 'RJ', 
+                km: 430, 
+                vehicle: 'carreta5', 
+                freightQuoted: 6100, 
+                carrier: 'Transportadora Alpha',
+                firebaseId: null
+              },
+              { 
+                id: '2', 
+                corridor: 'SP > MG', 
+                origin: 'Guarulhos/SP', 
+                destination: 'Contagem/MG', 
+                originUF: 'SP', 
+                destinationUF: 'MG', 
+                km: 590, 
+                vehicle: 'carreta5', 
+                freightQuoted: 7800, 
+                carrier: 'Transportadora Beta',
+                firebaseId: null
+              },
+              { 
+                id: '3', 
+                corridor: 'SP > PR', 
+                origin: 'Guarulhos/SP', 
+                destination: 'Curitiba/PR', 
+                originUF: 'SP', 
+                destinationUF: 'PR', 
+                km: 405, 
+                vehicle: 'carreta6', 
+                freightQuoted: 5200, 
+                carrier: 'Transportadora Gama',
+                firebaseId: null
+              },
+              { 
+                id: '4', 
+                corridor: 'SP > BA', 
+                origin: 'Guarulhos/SP', 
+                destination: 'Feira de Santana/BA', 
+                originUF: 'SP', 
+                destinationUF: 'BA', 
+                km: 1830, 
+                vehicle: 'bitrem', 
+                freightQuoted: 22000, 
+                carrier: 'Transportadora Delta',
+                firebaseId: null
+              }
             ];
           } else {
             state.routes = rotasFirebase;
@@ -1255,7 +1471,19 @@
         } catch (error) {
           console.log("Firebase indisponível. Usando rotas locais.");
           state.routes = [
-            { id: 1, corridor: 'SP > RJ', origin: 'Guarulhos/SP', destination: 'Duque de Caxias/RJ', originUF: 'SP', destinationUF: 'RJ', km: 430, vehicle: 'carreta5', freightQuoted: 6100, carrier: 'Transportadora Alpha' }
+            { 
+              id: '1', 
+              corridor: 'SP > RJ', 
+              origin: 'Guarulhos/SP', 
+              destination: 'Duque de Caxias/RJ', 
+              originUF: 'SP', 
+              destinationUF: 'RJ', 
+              km: 430, 
+              vehicle: 'carreta5', 
+              freightQuoted: 6100, 
+              carrier: 'Transportadora Alpha',
+              firebaseId: null
+            }
           ];
         }
 
