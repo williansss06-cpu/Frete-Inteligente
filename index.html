@@ -1664,26 +1664,7 @@
           </div>
         `).join('') : '<div class="list-item">Nenhum disparo realizado ainda.</div>';
       }
-
-      function loadSampleReturns() {
-        if (!state.dailyRoutes.length) loadSampleDailyRoutes();
-        if (!state.partners.length) loadSamplePartners();
-        state.quotationReturns = [
-          { routeId: 101, partnerName: 'Transportadora Alpha', price: 5200 },
-          { routeId: 101, partnerName: 'Transportadora Beta', price: 4700 },
-          { routeId: 102, partnerName: 'Transportadora Alpha', price: 7600 },
-          { routeId: 102, partnerName: 'Transportadora Gama', price: 5100 },
-          { routeId: 103, partnerName: 'Transportadora Beta', price: 3000 },
-          { routeId: 103, partnerName: 'Transportadora Delta', price: 6200 }
-        ];
-        const counts = {};
-        state.quotationReturns.forEach((r) => { counts[r.partnerName] = (counts[r.partnerName] || 0) + 1; });
-        state.partners = state.partners.map((p) => ({ ...p, responses: counts[p.name] || p.responses }));
-        renderPartners();
-        renderReturns();
-      }
-
-      function renderReturns() {
+          function renderReturns() {
         $('returnsBody').innerHTML = state.quotationReturns.length ? state.quotationReturns.map((ret) => {
           const route = state.dailyRoutes.find((r) => r.id === ret.routeId);
           if (!route) return '';
